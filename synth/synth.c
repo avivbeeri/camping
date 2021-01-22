@@ -281,7 +281,6 @@ PLUGIN_method(storePattern, ctx, vm) {
   int8_t defaultOctave = 4;
   int8_t baseOctave = defaultOctave;
   while (token != NULL) {
-    DOME_log(ctx, "token: %s\n", token);
     NOTE note;
     size_t len = strlen(token);
 
@@ -293,7 +292,6 @@ PLUGIN_method(storePattern, ctx, vm) {
         i++;
       }
       buf[i] = '\0';
-      DOME_log(ctx, "%s\n", buf);
       d = atoi(buf);
     }
     note.duration = 240.0 / bpm / d;
@@ -335,7 +333,6 @@ PLUGIN_method(storePattern, ctx, vm) {
 
   for (size_t i = 0; i < pattern->count; i++) {
     NOTE note = pattern->notes[i];
-    DOME_log(ctx, "Duration: %f - Pitch: %i - Octave: %i\n", note.duration, note.pitch, note.octave);
   }
   free((void*)patternStr);
 }
@@ -346,7 +343,6 @@ PLUGIN_method(noteOn, ctx, vm) {
   synth.frequency = getNoteFrequency(octave, pitch);
 
   SYNTH_activate();
-  DOME_log(ctx, "Octave: %i - Note: %i - Frequency: %f\n", octave, pitch, synth.frequency);
 }
 
 PLUGIN_method(noteOff, ctx, vm) {
@@ -367,9 +363,6 @@ PLUGIN_method(playTone, ctx, vm) {
   synth.startTime = globalTime;
 
   SYNTH_activate();
-
-  DOME_log(ctx, "Begin");
-  DOME_log(ctx, "Frequency: %f\n", synth.frequency);
 }
 
 PLUGIN_method(playNote, ctx, vm) {
@@ -380,9 +373,6 @@ PLUGIN_method(playNote, ctx, vm) {
   synth.startTime = globalTime;
 
   SYNTH_activate();
-
-  DOME_log(ctx, "Begin");
-  DOME_log(ctx, "Octave: %i - Note: %i - Frequency: %f\n", octave, pitch, synth.frequency);
 }
 
 DOME_Result PLUGIN_onInit(DOME_getAPIFunction DOME_getApi, DOME_Context ctx) {
@@ -390,7 +380,6 @@ DOME_Result PLUGIN_onInit(DOME_getAPIFunction DOME_getApi, DOME_Context ctx) {
   audio = DOME_getAPI(API_AUDIO, DOME_API_VERSION);
   wren = DOME_getAPI(API_WREN, WREN_API_VERSION);
 
-  DOME_log(ctx, "init hook triggered\n");
   const DOME_Result result = DOME_registerModule(ctx, "synth", source);
   if (result == DOME_RESULT_FAILURE) {
     return result;

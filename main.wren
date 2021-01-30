@@ -1,9 +1,10 @@
 import "graphics" for Canvas, ImageData, Color, Font
 import "dome" for Window
-import "nokia" for Nokia
-import "entity" for Entity
 import "input" for Keyboard
 import "./keys" for InputGroup
+import "./entity" for Entity, Player
+import "./world" for World
+import "./nokia" for Nokia
 
 var SPEED = 18
 
@@ -70,7 +71,7 @@ class Game {
     Canvas.font = "classic"
     Window.lockstep = true
     Window.resize(Canvas.width * scale, Canvas.height * scale)
-    __player = Entity.new()
+    __player = Player.new()
     __camera = Entity.new()
     __moving = false
   }
@@ -144,7 +145,7 @@ class Game {
     Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 
-    Canvas.print("Hello world", 0,0, Nokia.fg)
+    // Canvas.print("Hello world", 0,0, Nokia.fg)
   }
 
 

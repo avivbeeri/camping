@@ -11,5 +11,14 @@ class Entity {
   move(direction) {
     _pos = _pos + direction
   }
+
+  update(ctx) {}
+  draw(ctx) {}
+}
+
+class Player is Entity {
+  construct new() {
+    super()
+  }
 }
 

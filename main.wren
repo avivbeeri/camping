@@ -1,4 +1,4 @@
-import "graphics" for Canvas, ImageData, Color
+import "graphics" for Canvas, ImageData, Color, Font
 import "dome" for Window
 import "nokia" for Nokia
 import "entity" for Entity
@@ -59,16 +59,20 @@ var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
 var T = 0
 var F = 0
-var TsincePress = 10
+
+
 
 class Game {
   static init() {
     var scale = 6
     Nokia.init("horizontal")
+    Font.load("classic", "res/nokia.ttf", 8)
+    Canvas.font = "classic"
     Window.lockstep = true
     Window.resize(Canvas.width * scale, Canvas.height * scale)
     __player = Entity.new()
     __camera = Entity.new()
+    __moving = false
   }
 
   static update() {
@@ -77,21 +81,25 @@ class Game {
 
     var oldPos = __player.pos * 1
     var dir = __player.pos - __camera.pos
+    __moving = dir.length > (1/SPEED)
     if (dir.length > (1/SPEED)) {
       __camera.pos = __camera.pos + dir.unit / SPEED
-      TsincePress = 0
     } else {
       __camera.pos = __player.pos * 1
     }
-    if (dir.length <= (1/SPEED)) {
+    if (!__moving) {
       if (LEFT_KEY.firing) {
         __player.pos.x = __player.pos.x - 1
+        __moving = true
       } else if (RIGHT_KEY.firing) {
         __player.pos.x = __player.pos.x + 1
+        __moving = true
       } else if (UP_KEY.firing) {
         __player.pos.y = __player.pos.y - 1
+        __moving = true
       } else if (DOWN_KEY.firing) {
         __player.pos.y = __player.pos.y + 1
+        __moving = true
       }
       var newPos = __player.pos
       if ((0 <= newPos.y  && newPos.y < 6 && 0 <= newPos.x && newPos.x < 7))  {
@@ -102,12 +110,6 @@ class Game {
             Nokia.synth.playTone(110, 50)
           }
         }
-      }
-      var dir = __player.pos - __camera.pos
-      if (dir.length > (1/SPEED)) {
-        TsincePress = 0
-      } else {
-        TsincePress = TsincePress + 1
       }
     }
 
@@ -133,7 +135,7 @@ class Game {
 
 
     Canvas.offset()
-    if (TsincePress < 2) {
+    if (__moving) {
       // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, __invert)
       CustomSheet.draw(32 + (F * 8), 0, 8, 8, cx, cy, __invert)
     } else {
@@ -142,6 +144,7 @@ class Game {
     Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 
+    Canvas.print("Hello world", 0,0, Nokia.fg)
   }
 
 

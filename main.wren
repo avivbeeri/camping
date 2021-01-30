@@ -5,6 +5,8 @@ import "entity" for Entity
 import "input" for Keyboard
 import "./keys" for InputGroup
 
+var SPEED = 18
+
 
 var MAP = [
   0,0,1,1,1,0,0,
@@ -50,7 +52,6 @@ class Tilesheet {
       "foreground": invert ? Nokia.bg : Nokia.fg,
       "background": Color.none // invert ? Nokia.fg : Nokia.bg
     }).draw(dx, dy)
-
   }
 }
 
@@ -58,6 +59,7 @@ var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
 var T = 0
 var F = 0
+var TsincePress = 10
 
 class Game {
   static init() {
@@ -75,12 +77,13 @@ class Game {
 
     var oldPos = __player.pos * 1
     var dir = __player.pos - __camera.pos
-    if (dir.length > 0) {
-      System.print("%(__camera.pos) %(__player.pos)")
-      __camera.pos = __camera.pos + dir.unit / 16
+    if (dir.length > (1/SPEED)) {
+      __camera.pos = __camera.pos + dir.unit / SPEED
+      TsincePress = 0
+    } else {
+      __camera.pos = __player.pos * 1
     }
-    if (dir.length <= 0) {
-
+    if (dir.length <= (1/SPEED)) {
       if (LEFT_KEY.firing) {
         __player.pos.x = __player.pos.x - 1
       } else if (RIGHT_KEY.firing) {
@@ -91,18 +94,22 @@ class Game {
         __player.pos.y = __player.pos.y + 1
       }
       var newPos = __player.pos
-      if (!(0 <= newPos.y  && newPos.y < 6 && 0 <= newPos.x && newPos.x < 7))  {
-      }
-      if (MAP[newPos.y * 7 + newPos.x] == 1 ) {
-        __player.pos.x = oldPos.x
-        __player.pos.y = oldPos.y
-        if (DIR_KEYS.any {|key| key.justPressed }) {
-          Nokia.synth.playTone(110, 50)
+      if ((0 <= newPos.y  && newPos.y < 6 && 0 <= newPos.x && newPos.x < 7))  {
+        if (MAP[newPos.y * 7 + newPos.x] == 1 ) {
+          __player.pos.x = oldPos.x
+          __player.pos.y = oldPos.y
+          if (DIR_KEYS.any {|key| key.justPressed }) {
+            Nokia.synth.playTone(110, 50)
+          }
         }
       }
+      var dir = __player.pos - __camera.pos
+      if (dir.length > (1/SPEED)) {
+        TsincePress = 0
+      } else {
+        TsincePress = TsincePress + 1
+      }
     }
-
-
 
     __invert = Nokia.getInput("1").down
     if (Nokia.getInput("1").justPressed) {
@@ -126,7 +133,12 @@ class Game {
 
 
     Canvas.offset()
-    SmallSheet.draw(4*8, 0, 8, 8, cx, cy, __invert)
+    if (TsincePress < 2) {
+      // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, __invert)
+      CustomSheet.draw(32 + (F * 8), 0, 8, 8, cx, cy, __invert)
+    } else {
+      CustomSheet.draw(16 + (F * 8), 8, 8, 8, cx, cy, __invert)
+    }
     Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 

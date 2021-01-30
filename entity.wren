@@ -6,6 +6,7 @@ class Entity {
   }
 
   pos { _pos }
+  pos=(v) { _pos = v }
 
   move(direction) {
     _pos = _pos + direction

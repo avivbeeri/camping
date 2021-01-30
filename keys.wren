@@ -30,6 +30,13 @@ class InputGroup {
   frequency { _freq }
   frequency=(v) { _freq = v }
 
+  reset() {
+    _inputs.each {|input| input.reset() }
+  }
+
+  justPressed {
+    return _inputs.count > 0 && _inputs.any {|input| input.justPressed }
+  }
   down {
     return _inputs.count > 0 && _inputs.any {|input| input.down }
   }

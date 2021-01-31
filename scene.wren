@@ -4,27 +4,11 @@ import "./nokia" for Nokia
 import "input" for Keyboard
 import "math" for Vec
 import "./tilesheet" for Tilesheet
-import "./keys" for InputGroup
+import "./keys" for InputGroup, Actions
 import "./entities" for Player, Camera
 import "./core/world" for World
 import "./core/scene" for Scene
-
-var UP_KEY = InputGroup.new([
-  Keyboard["2"], Keyboard["up"], Keyboard["w"]
-])
-var DOWN_KEY = InputGroup.new([
-  Keyboard["8"], Keyboard["down"], Keyboard["s"]
-])
-var LEFT_KEY = InputGroup.new([
-  Keyboard["4"], Keyboard["left"], Keyboard["a"]
-])
-var RIGHT_KEY = InputGroup.new([
-  Keyboard["6"], Keyboard["right"], Keyboard["d"]
-])
-
-var DIR_KEYS = [ UP_KEY, DOWN_KEY, LEFT_KEY, RIGHT_KEY ]
-// Set frequency for smoother tile movement
-DIR_KEYS.each {|key| key.frequency = 1 }
+import "./menu" for Menu
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -36,6 +20,7 @@ class WorldScene is Scene {
     _player = Player.new()
     _camera = Camera.new(_player)
     _moving = false
+    _ui = []
 
     _world = World.new()
     _world.addEntity("camera", _camera)
@@ -46,32 +31,52 @@ class WorldScene is Scene {
     T = T + (1/60)
     F = (T * 2).floor % 2
 
+    if (_ui.count > 0) {
+      _ui[0].update()
+      if (_ui[0].finished) {
+        _ui.removeAt(0)
+      }
+      return
+    }
+
+    _invert = Nokia.getInput("1").down
+    if (Nokia.getInput("1").justPressed) {
+      Nokia.synth.playTone(440, 50)
+    }
     var pressed = false
+
+
+    // Overworld interaction
+    if (Actions.interact.justPressed) {
+      _ui.add(Menu.new(_world, [
+        "Sleep", "relax",
+        "Cook", "cook",
+        "Cancel", "cancel"
+      ]))
+      return
+    }
+
 
     if (!_camera.moving) {
       var move = Vec.new()
-      if (LEFT_KEY.firing) {
+      if (Actions.left.firing) {
         move.x = -1
-      } else if (RIGHT_KEY.firing) {
+      } else if (Actions.right.firing) {
         move.x = 1
-      } else if (UP_KEY.firing) {
+      } else if (Actions.up.firing) {
         move.y = -1
-      } else if (DOWN_KEY.firing) {
+      } else if (Actions.down.firing) {
         move.y = 1
       }
       _player.vel = move
     }
-    pressed = DIR_KEYS.any {|key| key.down }
+    pressed = Actions.directions.any {|key| key.down }
 
     _world.update()
     _moving = _camera.moving || pressed
 
     // Nokia.synth.playTone(110, 50)
 
-    _invert = Nokia.getInput("1").down
-    if (Nokia.getInput("1").justPressed) {
-      Nokia.synth.playTone(440, 50)
-    }
 
   }
 
@@ -102,6 +107,9 @@ class WorldScene is Scene {
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 
     // Canvas.print("Hello world", 0,0, Nokia.fg)
+    for (ui in _ui) {
+      ui.draw()
+    }
 
   }
 

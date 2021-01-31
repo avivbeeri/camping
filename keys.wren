@@ -53,3 +53,44 @@ class InputGroup {
 
   action { _action }
 }
+
+var UP_KEY = InputGroup.new([
+  Keyboard["2"], Keyboard["up"], Keyboard["w"]
+])
+var DOWN_KEY = InputGroup.new([
+  Keyboard["8"], Keyboard["down"], Keyboard["s"]
+])
+var LEFT_KEY = InputGroup.new([
+  Keyboard["4"], Keyboard["left"], Keyboard["a"]
+])
+var RIGHT_KEY = InputGroup.new([
+  Keyboard["6"], Keyboard["right"], Keyboard["d"]
+])
+
+var CANCEL_KEY = InputGroup.new([
+  Keyboard["3"], Keyboard["backspace"], Keyboard["escape"]
+])
+
+var CONFIRM_KEY = InputGroup.new([
+  Keyboard["5"], Keyboard["return"], Keyboard["space"]
+])
+
+var INTERACT_KEY = InputGroup.new([
+  Keyboard["5"], Keyboard["e"]
+])
+
+var DIR_KEYS = [ UP_KEY, DOWN_KEY, LEFT_KEY, RIGHT_KEY ]
+// Set frequency for smoother tile movement
+DIR_KEYS.each {|key| key.frequency = 1 }
+
+class Actions {
+  static directions { DIR_KEYS }
+
+  static up { UP_KEY }
+  static down { DOWN_KEY }
+  static left { LEFT_KEY }
+  static right { RIGHT_KEY }
+  static interact { INTERACT_KEY }
+  static confirm { CONFIRM_KEY }
+  static cancel { CANCEL_KEY }
+}

@@ -14,14 +14,15 @@ class Camera is Entity {
 
   update(ctx) {
     var dir = _target.pos - pos
-    if (dir.length > (1/speed)) {
+    if (dir.length >= (1/speed)) {
       vel = dir.unit / speed
-    } else {
+    }
+    move()
+    if (!moving) {
       vel = Vec.new()
       // Copy the target's position
       pos = _target.pos * 1
     }
-    move()
   }
 
   // Higher is slower (This is how many steps we aim to take between tiles)
@@ -29,7 +30,7 @@ class Camera is Entity {
   speed  { 24 }
 
   moving {
-    return (this.pos - _target.pos).length > (1/speed)
+    return (this.pos - _target.pos).length >= (1/speed)
   }
 
 }

@@ -7,14 +7,7 @@ import "./tilesheet" for Tilesheet
 import "./keys" for InputGroup
 import "./entities" for Player, Camera
 import "./core/world" for World
-
-class Scene {
-  game=(v) { _game = v }
-  game { _game }
-
-  update() {}
-  draw() {}
-}
+import "./core/scene" for Scene
 
 var UP_KEY = InputGroup.new([
   Keyboard["2"], Keyboard["up"], Keyboard["w"]
@@ -38,8 +31,8 @@ var SmallSheet = Tilesheet.new("res/small.png")
 var T = 0
 var F = 0
 
-class WorldScene {
-  construct new() {
+class WorldScene is Scene {
+  construct new(args) {
     _player = Player.new()
     _camera = Camera.new(_player)
     _moving = false

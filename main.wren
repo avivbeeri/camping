@@ -16,7 +16,7 @@ class Game {
     Window.resize(Canvas.width * scale, Canvas.height * scale)
     Font.load("classic", "res/nokia.ttf", 8)
 
-    __scene = WorldScene.new()
+    push(WorldScene)
   }
 
   static update() {
@@ -24,6 +24,12 @@ class Game {
   }
   static draw(dt) {
     __scene.draw()
+  }
+
+  static push(scene) { push(scene, null) }
+  static push(scene, args) {
+    __scene = scene.new(args)
+    __scene.game = Game
   }
 
 

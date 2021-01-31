@@ -1,23 +1,11 @@
 import "graphics" for Canvas, ImageData, Color, Font
 import "dome" for Window
 import "input" for Keyboard
+import "math" for Vec
 import "./keys" for InputGroup
-import "./entity" for Entity, Player
+import "./entity" for Entity, Player, Camera
 import "./world" for World
 import "./nokia" for Nokia
-
-var SPEED = 18
-
-
-var MAP = [
-  0,0,1,1,1,0,0,
-  0,0,1,1,1,0,0,
-  0,0,0,0,0,0,0,
-  0,1,0,0,0,0,0,
-  0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0
-]
 
 var UP_KEY = InputGroup.new([
   Keyboard["2"], Keyboard["up"], Keyboard["w"]
@@ -72,47 +60,37 @@ class Game {
     Window.lockstep = true
     Window.resize(Canvas.width * scale, Canvas.height * scale)
     __player = Player.new()
-    __camera = Entity.new()
+    __camera = Camera.new()
     __moving = false
+
+    __world = World.new()
+    __world.addEntity("camera", __camera)
+    __world.addEntity("player", __player)
   }
 
   static update() {
     T = T + (1/60)
     F = (T * 2).floor % 2
 
-    var oldPos = __player.pos * 1
-    var dir = __player.pos - __camera.pos
-    __moving = dir.length > (1/SPEED)
-    if (dir.length > (1/SPEED)) {
-      __camera.pos = __camera.pos + dir.unit / SPEED
-    } else {
-      __camera.pos = __player.pos * 1
-    }
     if (!__moving) {
+      var move = Vec.new()
       if (LEFT_KEY.firing) {
-        __player.pos.x = __player.pos.x - 1
-        __moving = true
+        move.x = -1
       } else if (RIGHT_KEY.firing) {
-        __player.pos.x = __player.pos.x + 1
-        __moving = true
+        move.x = 1
       } else if (UP_KEY.firing) {
-        __player.pos.y = __player.pos.y - 1
-        __moving = true
+        move.y = -1
       } else if (DOWN_KEY.firing) {
-        __player.pos.y = __player.pos.y + 1
-        __moving = true
+        move.y = 1
       }
-      var newPos = __player.pos
-      if ((0 <= newPos.y  && newPos.y < 6 && 0 <= newPos.x && newPos.x < 7))  {
-        if (MAP[newPos.y * 7 + newPos.x] == 1 ) {
-          __player.pos.x = oldPos.x
-          __player.pos.y = oldPos.y
-          if (DIR_KEYS.any {|key| key.justPressed }) {
-            Nokia.synth.playTone(110, 50)
-          }
-        }
+      if (move.length > 0) {
+        __player.vel = move
       }
     }
+
+    __world.update()
+    __moving = __camera.vel.length > 0
+    // Nokia.synth.playTone(110, 50)
 
     __invert = Nokia.getInput("1").down
     if (Nokia.getInput("1").justPressed) {

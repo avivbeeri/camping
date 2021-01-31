@@ -3,8 +3,8 @@ import "dome" for Window
 import "input" for Keyboard
 import "math" for Vec
 import "./keys" for InputGroup
-import "./entity" for Entity, Player, Camera
-import "./world" for World
+import "./entities" for Player, Camera
+import "./core/world" for World
 import "./nokia" for Nokia
 
 var UP_KEY = InputGroup.new([

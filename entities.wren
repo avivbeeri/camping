@@ -2,8 +2,10 @@ import "math" for Vec
 import "./core/entity" for Entity
 
 class Camera is Entity {
-  construct new() {
+  construct new(target) {
     super()
+    _target = target
+
 
     // This has to update after the player
     // or we will get inconsistent movement
@@ -11,14 +13,13 @@ class Camera is Entity {
   }
 
   update(ctx) {
-    var player = ctx.getEntityByTag("player")
-    var dir = player.pos - pos
-    if (dir.length > (1 / speed)) {
+    var dir = _target.pos - pos
+    if (dir.length > (1/speed)) {
       vel = dir.unit / speed
     } else {
       vel = Vec.new()
-      // Copy the player's position
-      pos = player.pos * 1
+      // Copy the target's position
+      pos = _target.pos * 1
     }
     move()
   }
@@ -26,6 +27,10 @@ class Camera is Entity {
   // Higher is slower (This is how many steps we aim to take between tiles)
   // Powers of 2 are smoother
   speed  { 24 }
+
+  moving {
+    return (this.pos - _target.pos).length > (1/speed)
+  }
 
 }
 

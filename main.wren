@@ -60,7 +60,7 @@ class Game {
     Window.lockstep = true
     Window.resize(Canvas.width * scale, Canvas.height * scale)
     __player = Player.new()
-    __camera = Camera.new()
+    __camera = Camera.new(__player)
     __moving = false
 
     __world = World.new()
@@ -72,7 +72,9 @@ class Game {
     T = T + (1/60)
     F = (T * 2).floor % 2
 
-    if (!__moving) {
+    var pressed = false
+
+    if (!__camera.moving) {
       var move = Vec.new()
       if (LEFT_KEY.firing) {
         move.x = -1
@@ -83,13 +85,13 @@ class Game {
       } else if (DOWN_KEY.firing) {
         move.y = 1
       }
-      if (move.length > 0) {
-        __player.vel = move
-      }
+      __player.vel = move
     }
+    pressed = DIR_KEYS.any {|key| key.down }
 
     __world.update()
-    __moving = __camera.vel.length > 0
+    __moving = __camera.moving || pressed
+
     // Nokia.synth.playTone(110, 50)
 
     __invert = Nokia.getInput("1").down

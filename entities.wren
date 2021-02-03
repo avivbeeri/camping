@@ -1,5 +1,6 @@
 import "math" for Vec
 import "./core/entity" for Entity
+import "./events" for CollisionEvent
 
 class Camera is Entity {
   construct new(target) {
@@ -45,6 +46,7 @@ class Player is Entity {
     move()
     if (ctx.checkCollision(pos)) {
       pos = old
+      ctx.events.add(CollisionEvent.new(this))
     }
     vel = Vec.new()
   }

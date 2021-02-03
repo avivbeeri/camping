@@ -9,6 +9,7 @@ import "./entities" for Player, Camera
 import "./core/world" for World
 import "./core/scene" for Scene
 import "./menu" for Menu
+import "./events" for CollisionEvent
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -20,6 +21,7 @@ class WorldScene is Scene {
     _player = Player.new()
     _camera = Camera.new(_player)
     _moving = false
+    _tried = false
     _ui = []
 
     _world = World.new()
@@ -57,7 +59,7 @@ class WorldScene is Scene {
     }
 
 
-    if (!_camera.moving) {
+    if (!_camera.moving && !_tried) {
       var move = Vec.new()
       if (Actions.left.firing) {
         move.x = -1
@@ -74,10 +76,15 @@ class WorldScene is Scene {
 
     _world.update()
     _moving = _camera.moving || pressed
-
-    // Nokia.synth.playTone(110, 50)
-
-
+    for (event in _world.events) {
+      if (event is CollisionEvent) {
+        Nokia.synth.playTone(110, 50)
+        _tried = true
+      }
+    }
+    if (!pressed) {
+      _tried = false
+    }
   }
 
   draw() {

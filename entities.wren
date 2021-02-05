@@ -91,7 +91,7 @@ class Player is Entity {
 
     if (handleCollision(ctx, pos)) {
       pos = old
-    } else {
+    } else if (old != pos) {
       ctx.events.add(MoveEvent.new(this))
     }
     vel = Vec.new()

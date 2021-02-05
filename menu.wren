@@ -14,6 +14,11 @@ class Menu is Ui {
     _actions = actions
     _size = _actions.count / 2
     _cursor = 0
+    _width = 0
+    for (i in 0..._size) {
+      _width = M.max(_width, _actions[i * 2].count)
+    }
+    System.print(_width)
   }
 
   update() {
@@ -35,17 +40,17 @@ class Menu is Ui {
   }
 
   draw() {
-    Canvas.cls(Nokia.bg)
+    Canvas.rectfill(0, 0, 10 + _width * 6, Canvas.height, Nokia.bg)
     var y = 4
     var i = 0
     for (i in 0..._size) {
       if (i == _cursor) {
-        Canvas.print(">", 0, y, Nokia.fg)
-
+        Canvas.print(">", 3, y, Nokia.fg)
       }
-      Canvas.print(_actions[i * 2], 8, y, Nokia.fg)
+      Canvas.print(_actions[i * 2], 10, y, Nokia.fg)
       y = y + 8
     }
+    Canvas.rect(1, 1, 10 + _width * 6 - 2, Canvas.height - 2, Nokia.fg)
   }
 
   finished { _done }

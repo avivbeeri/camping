@@ -1,12 +1,9 @@
 import "core/dataobject" for DataObject
 import "core/elegant" for Elegant
 
-var SECTION_SIZE = 8
+var SECTION_SIZE = 16
 var SECTION_SHIFT = SECTION_SIZE.log2
-var SECTION_MASK = 1
-for (i in 0...(SECTION_SHIFT-1)) {
-  SECTION_MASK = (SECTION_MASK << 1) | 1
-}
+var SECTION_MASK = SECTION_SIZE - 1
 
 class Tile is DataObject {
   static new() {

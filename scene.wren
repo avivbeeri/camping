@@ -60,6 +60,7 @@ class TransitionEffect is Ui {
     } else {
       Canvas.cls(Nokia.fg)
     }
+    return true
   }
 
 }
@@ -177,6 +178,13 @@ class WorldScene is Scene {
       } else if (event is EnterTentEvent) {
         System.print("Entering tent...")
         _ui.add(TransitionEffect.new(_world))
+        /*
+        _ui.add(Menu.new(_world, [
+          "Sleep", "relax",
+          "Cook", "cook",
+          "Cancel", "cancel"
+        ]))
+        */
       }
     }
     if (!pressed) {
@@ -239,7 +247,10 @@ class WorldScene is Scene {
 
 
     for (ui in _ui) {
-      ui.draw()
+      var block = ui.draw()
+      if (block) {
+        break
+      }
     }
 
     // Draw UI overlay

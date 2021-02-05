@@ -3,6 +3,22 @@ import "core/dataobject" for DataObject
 class World is DataObject {
   construct new() {
     super()
+    _worlds = []
+  }
+
+  pushZone(world) {
+    _worlds.insert(0, world)
+  }
+  popZone() {
+    return _worlds.removeAt(0)
+  }
+
+  active { _worlds[0] }
+}
+
+class Zone is DataObject {
+  construct new() {
+    super()
     _entities = []
     _events = []
     _tagged = {}

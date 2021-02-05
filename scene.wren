@@ -6,7 +6,7 @@ import "math" for Vec, M
 import "./tilesheet" for Tilesheet
 import "./keys" for InputGroup, Actions
 import "./entities" for Player, Tent, Campfire
-import "./core/world" for World
+import "./core/world" for World, Zone
 import "./core/scene" for Scene, Ui
 import "./core/map" for TileMap, Tile
 import "./menu" for Menu
@@ -20,14 +20,24 @@ var F = 0
 var STATIC = false
 
 class TransitionEffect is Ui {
-  construct new(ctx) {
+  construct new(ctx, newZone) {
     super(ctx)
     _step = 0
+    _zone = newZone
   }
   speed { 0.3 }
 
   update() {
     _step = _step + 1/60
+    if (finished) {
+      if (_zone) {
+        ctx.world.pushZone(_zone)
+      } else {
+        ctx.world.popZone()
+      }
+      var player = _zone.getEntityByTag("player")
+      ctx.camera = player.pos * 1
+    }
   }
 
   finished { _step >= speed * 4.5 }
@@ -65,10 +75,10 @@ class TransitionEffect is Ui {
 
 }
 class CameraLerp is Ui {
-  construct new(ctx, camera, goal) {
+  construct new(ctx, goal) {
     super(ctx)
-    _camera = camera
-    _start = camera * 1
+    _camera = ctx.camera
+    _start = ctx.camera * 1
     _alpha = 0
     _goal = goal
   }
@@ -103,38 +113,45 @@ class WorldScene is Scene {
     _moving = false
     _tried = false
     _ui = []
+    _world = World.new()
 
-    var world = World.new()
-    world.addEntity("player", Player.new())
+    var zone = Zone.new()
+    zone.addEntity("player", Player.new())
 
-    world.map = TileMap.init()
-    world.map[0, 0] = Tile.new({ "floor": "grass" })
+    zone.map = TileMap.init()
+    zone.map[0, 0] = Tile.new({ "floor": "grass" })
 
-    var tent = world.addEntity(Tent.new())
+    var tent = zone.addEntity(Tent.new())
     tent.pos.x = 2
-    var fire = world.addEntity(Campfire.new())
+    var fire = zone.addEntity(Campfire.new())
     fire.pos.x = 1
     fire.pos.y = 3
 
-    _worlds = []
-    _worldIndex = 0
+    _zones = []
+    _zoneIndex = 0
 
-    pushWorld(world)
-  }
-
-  pushWorld(world) {
-    _worlds.add(world)
-    var player = world.getEntityByTag("player")
+    _world.pushZone(zone)
+    var player = zone.getEntityByTag("player")
     _camera.x = player.pos.x
     _camera.y = player.pos.y
-    _world = world
-    _worldIndex = _worlds.count - 1
-    return _worldIndex
+
+    _tentZone = Zone.new()
+    _tentZone.addEntity("player", Player.new())
+
+    _tentZone.map = TileMap.init()
+    for (x in -1..8) {
+      _tentZone.map[x, -1] = Tile.new({ "floor": "void", "solid": true })
+      _tentZone.map[x, 8] = Tile.new({ "floor": "void", "solid": true })
+    }
+    for (y in -1..8) {
+      _tentZone.map[-1, y] = Tile.new({ "floor": "void", "solid": true })
+      _tentZone.map[8, y] = Tile.new({ "floor": "void", "solid": true })
+    }
   }
 
   update() {
-    _world = _worlds[_worldIndex]
-    var player = _world.getEntityByTag("player")
+    _zone = _world.active
+    var player = _zone.getEntityByTag("player")
 
     T = T + (1/60)
     F = (T * 2).floor % 2
@@ -155,9 +172,9 @@ class WorldScene is Scene {
     var pressed = false
 
 
-    // Overworld interaction
+    // Overzone interaction
     if (Actions.interact.justPressed) {
-      _ui.add(Menu.new(_world, [
+      _ui.add(Menu.new(_zone, [
         "Sleep", "relax",
         "Cook", "cook",
         "Cancel", "cancel"
@@ -181,12 +198,12 @@ class WorldScene is Scene {
     }
     pressed = Actions.directions.any {|key| key.down }
 
-    _world.update()
-    for (event in _world.events) {
+    _zone.update()
+    for (event in _zone.events) {
       if (event is MoveEvent) {
         if (event.target is Player) {
           _moving = true
-          _ui.add(CameraLerp.new(_world, _camera, event.target.pos))
+          _ui.add(CameraLerp.new(this, event.target.pos))
         }
       } else if (event is CollisionEvent) {
         Nokia.synth.playTone(110, 50)
@@ -194,7 +211,7 @@ class WorldScene is Scene {
         _moving = false
       } else if (event is EnterTentEvent) {
         System.print("Entering tent...")
-        _ui.add(TransitionEffect.new(_world))
+        _ui.add(TransitionEffect.new(this, _tentZone))
         /*
         _ui.add(Menu.new(_world, [
           "Sleep", "relax",
@@ -210,7 +227,7 @@ class WorldScene is Scene {
   }
 
   draw() {
-    var player = _world.getEntityByTag("player")
+    var player = _zone.getEntityByTag("player")
     var X_OFFSET = 4
     if (_invert) {
       Canvas.cls(Nokia.fg)
@@ -228,13 +245,15 @@ class WorldScene is Scene {
       for (dx in -7...7) {
         var x = player.pos.x + dx
         var y = player.pos.y + dy
-        if (_world.map[x, y]["floor"] == "grass") {
+        if (_zone.map[x, y]["floor"] == "grass") {
           SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+        } else if (_zone.map[x, y]["floor"] == "void") {
+          Canvas.rectfill(x * 8 + X_OFFSET, y * 8, 8, 8, _invert ? Nokia.bg : Nokia.fg)
         }
       }
     }
 
-    for (entity in _world.entities) {
+    for (entity in _zone.entities) {
       if (STATIC && entity is Player) {
         // We draw this
         if (_moving) {
@@ -276,4 +295,7 @@ class WorldScene is Scene {
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
   }
 
+  world { _world }
+  camera { _camera }
+  camera=(v) { _camera = v }
 }

@@ -2,7 +2,7 @@ import "graphics" for ImageData, Color, Canvas
 import "./nokia" for Nokia
 
 import "input" for Keyboard
-import "math" for Vec
+import "math" for Vec, M
 import "./tilesheet" for Tilesheet
 import "./keys" for InputGroup, Actions
 import "./entities" for Player, Tent, Campfire
@@ -22,20 +22,24 @@ var STATIC = false
 class CameraLerp is Ui {
   construct new(camera, goal) {
     _camera = camera
+    _start = camera * 1
+    _alpha = 0
     _goal = goal
-    _step = (goal - camera).unit / speed
   }
 
   finished {
     var dist = (_goal - _camera).length
-    return dist < (1/speed)
+    return _alpha >= 1 || dist < speed
   }
 
-  speed { 32 }
+  speed { 1 / 24 }
 
   update() {
+    _alpha = _alpha + speed
+
     var cam = _camera
-    cam = cam + _step
+    cam.x = M.lerp(_start.x, _alpha, _goal.x)
+    cam.y = M.lerp(_start.y, _alpha, _goal.y)
 
     if (finished) {
       cam = _goal

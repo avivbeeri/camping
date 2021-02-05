@@ -5,9 +5,10 @@ import "input" for Keyboard
 import "math" for Vec
 import "./tilesheet" for Tilesheet
 import "./keys" for InputGroup, Actions
-import "./entities" for Player, Camera
+import "./entities" for Player, Camera, Tent, Campfire
 import "./core/world" for World
 import "./core/scene" for Scene
+import "./core/map" for TileMap, Tile
 import "./menu" for Menu
 import "./events" for CollisionEvent
 
@@ -15,6 +16,8 @@ var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
 var T = 0
 var F = 0
+
+var STATIC = false
 
 class WorldScene is Scene {
   construct new(args) {
@@ -24,9 +27,21 @@ class WorldScene is Scene {
     _tried = false
     _ui = []
 
+
+
     _world = World.new()
     _world.addEntity("camera", _camera)
     _world.addEntity("player", _player)
+
+    _world.map = TileMap.init()
+    System.print(_world.map)
+    _world.map[0, 0] = Tile.new({ "floor": "grass" })
+
+    var tent = _world.addEntity(Tent.new())
+    tent.pos.x = 2
+    var fire = _world.addEntity(Campfire.new())
+    fire.pos.x = 1
+    fire.pos.y = 3
   }
 
   update() {
@@ -96,28 +111,57 @@ class WorldScene is Scene {
     }
     var cx = (Canvas.width - X_OFFSET - 20) / 2
     var cy = Canvas.height / 2 - 4
-    Canvas.offset(cx-_camera.pos.x * 8 -X_OFFSET, cy-_camera.pos.y * 8)
-    var x = Canvas.width - 20
-    CustomSheet.draw(0, 0, 16, 16, 8*3, 0, _invert)
-    CustomSheet.draw(16 + (F * 8), 0, 8, 8, 8 + X_OFFSET, 24, _invert)
-    // SmallSheet.draw(4*8, 0, 8, 8, _player.pos.x * 8 + X_OFFSET, _player.pos.y * 8, _invert)
-
-
-    Canvas.offset()
-    if (_moving) {
-      // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)
-      CustomSheet.draw(32 + (F * 8), 0, 8, 8, cx, cy, _invert)
-    } else {
-      CustomSheet.draw(16 + (F * 8), 8, 8, 8, cx, cy, _invert)
+    if (!STATIC) {
+      Canvas.offset(cx-_camera.pos.x * 8 -X_OFFSET, cy-_camera.pos.y * 8)
     }
+    var x = Canvas.width - 20
+
+    for (dy in -5...5) {
+      for (dx in -7...7) {
+        var x = _player.pos.x + dx
+        var y = _player.pos.y + dy
+        if (_world.map[x, y]["floor"] == "grass") {
+          SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+        }
+      }
+    }
+
+    for (entity in _world.entities) {
+      if (STATIC && entity is Player) {
+        // We draw this
+        if (_moving) {
+          // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)
+          CustomSheet.draw(32 + (F * 8), 0, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+        } else {
+          CustomSheet.draw(16 + (F * 8), 8, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+        }
+
+      } else if (entity is Tent) {
+        CustomSheet.draw(0, 0, 16, 16, entity.pos.x * 8 + X_OFFSET * 2, entity.pos.y * 8, _invert)
+      } else if (entity is Campfire) {
+        CustomSheet.draw(16 + (F * 8), 0, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+      }
+    }
+    // Put a background on the player for readability
+    if (!STATIC) {
+      Canvas.offset()
+      Canvas.rectfill(cx, cy, 8, 8, _invert ? Nokia.fg : Nokia.bg)
+      // Draw player in screen center
+      if (_moving) {
+        // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)
+        CustomSheet.draw(32 + (F * 8), 0, 8, 8, cx, cy, _invert)
+      } else {
+        CustomSheet.draw(16 + (F * 8), 8, 8, 8, cx, cy, _invert)
+      }
+    }
+
+    // Draw UI overlay
     Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
     Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 
-    // Canvas.print("Hello world", 0,0, Nokia.fg)
     for (ui in _ui) {
       ui.draw()
     }
-
   }
 
 }

@@ -1,31 +1,29 @@
-var MAP = [
-  0,0,1,1,1,0,0,
-  0,0,1,1,1,0,0,
-  0,0,0,0,0,0,0,
-  0,1,0,0,0,0,0,
-  0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0
-]
+import "core/dataobject" for DataObject
 
-class World {
+class World is DataObject {
   construct new() {
+    super()
     _entities = []
     _events = []
-    _data = {}
     _tagged = {}
+    _map = null
   }
+
+  entities { _entities }
+  map { _map }
+  map=(v) { _map = v }
 
   getEntityByTag(tag) { _tagged[tag] }
 
   addEntity(tag, entity) {
     _tagged[tag] = entity
-    addEntity(entity)
+    return addEntity(entity)
   }
 
   addEntity(entity) {
     _entities.add(entity)
     _entities.sort {|a, b| a.priority < b.priority}
+    return entity
   }
 
   events { _events }
@@ -39,16 +37,23 @@ class World {
     _entities.each {|entity| entity.draw(this) }
   }
 
-  checkCollision(vec) { checkCollision(vec.x, vec.y) }
-  checkCollision(x, y) {
-    if ((0 <= y  && y < 6 && 0 <= x && x < 7))  {
-      if (MAP[y * 7 + x] == 1 ) {
-        return true
-      }
-    }
-    return false
+  getEntitiesAtTile(x, y) {
+    return _entities.where {|entity| entity.occupies(x, y) }
   }
 
-  [key] { _data[key] }
-  [key]=(v) { _data[key] = v }
+  checkCollision(vec) { checkCollision(vec.x, vec.y) }
+  checkCollision(x, y) {
+    var solid = map[x, y]["solid"]
+    var occupies = false
+    if (!solid) {
+      for (entity in _entities) {
+        // Todo: There's no way to check the player
+        if (entity["solid"] && entity.occupies(x, y)) {
+          occupies = true
+          break
+        }
+      }
+    }
+    return solid || occupies
+  }
 }

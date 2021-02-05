@@ -2,6 +2,19 @@ import "math" for Vec
 import "./core/entity" for Entity
 import "./events" for CollisionEvent
 
+class Tent is Entity {
+  construct new() {
+    super()
+    size.x = 3
+    size.y = 2
+  }
+}
+class Campfire is Entity {
+  construct new() {
+    super()
+  }
+}
+
 class Camera is Entity {
   construct new(target) {
     super()
@@ -41,10 +54,17 @@ class Player is Entity {
     super()
   }
 
+  checkCollision(ctx, pos) {
+    var solid = ctx.map[pos]["solid"]
+    var occupying = ctx.getEntitiesAtTile(pos.x, pos.y).where {|entity| !(entity is Player || entity is Camera) }
+    return solid || occupying.count > 0
+  }
+
   update(ctx) {
     var old = pos
     move()
-    if (ctx.checkCollision(pos)) {
+
+    if (checkCollision(ctx, pos)) {
       pos = old
       ctx.events.add(CollisionEvent.new(this))
     }

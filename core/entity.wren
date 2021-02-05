@@ -1,8 +1,11 @@
 import "math" for Vec
+import "./core/world" for DataObject
 
-class Entity {
+class Entity is DataObject {
   construct new() {
+    super()
     _pos = Vec.new()
+    _size = Vec.new(1, 1)
     _vel = Vec.new()
 
     // Lower is better
@@ -12,6 +15,9 @@ class Entity {
   pos { _pos }
   pos=(v) { _pos = v }
 
+  size { _size }
+  size=(v) { _size = v }
+
   vel { _vel }
   vel=(v) { _vel = v }
 
@@ -20,6 +26,13 @@ class Entity {
 
   move() {
     _pos = _pos + _vel
+  }
+
+  occupies(x, y) {
+    return pos.x <= x &&
+           x <= pos.x + size.x - 1 &&
+           pos.y <= y &&
+           y <= pos.y + size.y - 1
   }
 
   update(ctx) {}

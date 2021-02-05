@@ -10,7 +10,7 @@ import "./core/world" for World
 import "./core/scene" for Scene, Ui
 import "./core/map" for TileMap, Tile
 import "./menu" for Menu
-import "./events" for CollisionEvent, MoveEvent
+import "./events" for CollisionEvent, MoveEvent, EnterTentEvent
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -19,8 +19,53 @@ var F = 0
 
 var STATIC = false
 
+class TransitionEffect is Ui {
+  construct new(ctx) {
+    super(ctx)
+    _step = 0
+  }
+  speed { 0.3 }
+
+  update() {
+    _step = _step + 1/60
+  }
+
+  finished { _step >= speed * 4.5 }
+
+  draw() {
+    if (_step < speed) {
+      for (y in 0...Canvas.height) {
+        for (x in 0...Canvas.width) {
+          if (y % 2 == 1 && x % 2 == 1) {
+            Canvas.pset(x, y, Nokia.fg)
+          }
+        }
+      }
+    } else if (_step < speed * 2) {
+      for (y in 0...Canvas.height) {
+        for (x in 0...Canvas.width) {
+          if (y % 2 != x % 2) {
+            Canvas.pset(x, y, Nokia.fg)
+          }
+        }
+      }
+    } else if (_step < speed * 3) {
+      for (y in 0...Canvas.height) {
+        for (x in 0...Canvas.width) {
+          if (y % 2 == 1 ||  x % 2 == 1) {
+            Canvas.pset(x, y, Nokia.fg)
+          }
+        }
+      }
+    } else {
+      Canvas.cls(Nokia.fg)
+    }
+  }
+
+}
 class CameraLerp is Ui {
-  construct new(camera, goal) {
+  construct new(ctx, camera, goal) {
+    super(ctx)
     _camera = camera
     _start = camera * 1
     _alpha = 0
@@ -123,12 +168,15 @@ class WorldScene is Scene {
       if (event is MoveEvent) {
         if (event.target is Player) {
           _moving = true
-          _ui.add(CameraLerp.new(_camera, event.target.pos))
+          _ui.add(CameraLerp.new(_world, _camera, event.target.pos))
         }
       } else if (event is CollisionEvent) {
         Nokia.synth.playTone(110, 50)
         _tried = true
         _moving = false
+      } else if (event is EnterTentEvent) {
+        System.print("Entering tent...")
+        _ui.add(TransitionEffect.new(_world))
       }
     }
     if (!pressed) {
@@ -189,13 +237,14 @@ class WorldScene is Scene {
       }
     }
 
-    // Draw UI overlay
-    Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
-    Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
 
     for (ui in _ui) {
       ui.draw()
     }
+
+    // Draw UI overlay
+    Canvas.rectfill(x, 0, 20, Canvas.height, Nokia.fg)
+    Canvas.line(x+1, 0, x+1, Canvas.height, Nokia.bg)
   }
 
 }

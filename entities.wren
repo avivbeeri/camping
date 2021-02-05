@@ -15,6 +15,7 @@ class Tent is Entity {
       if (event.target == this) {
         if (event.pos == pos + offset) {
           ctx.events.add(EnterTentEvent.new())
+          event.source.pos.y = event.source.pos.y + 1
           event.cancel()
         }
       }

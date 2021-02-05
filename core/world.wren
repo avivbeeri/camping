@@ -31,6 +31,7 @@ class World is DataObject {
   update() {
     _events.clear()
     _entities.each {|entity| entity.update(this) }
+    _events.sort {|a, b| a.priority < b.priority}
   }
 
   draw() {

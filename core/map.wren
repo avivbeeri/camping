@@ -1,6 +1,13 @@
 import "core/dataobject" for DataObject
 import "core/elegant" for Elegant
 
+var SECTION_SIZE = 8
+var SECTION_SHIFT = SECTION_SIZE.log2
+var SECTION_MASK = 1
+for (i in 0...(SECTION_SHIFT-1)) {
+  SECTION_MASK = (SECTION_MASK << 1) | 1
+}
+
 class Tile is DataObject {
   static new() {
     return Tile.new({})
@@ -41,29 +48,29 @@ class TileMap {
   }
 
   [x, y] {
-    var sectionX = x >> 2
-    var sectionY = y >> 2
+    var sectionX = x >> SECTION_SHIFT
+    var sectionY = y >> SECTION_SHIFT
     var pair = Elegant.pair(sectionX, sectionY)
     var section = _tiles[pair]
     if (section == null) {
-      section = _tiles[pair] = (0...16).map {|i| Tile.new() }.toList
+      section = _tiles[pair] = (0...(SECTION_SIZE * SECTION_SIZE)).map {|i| Tile.new() }.toList
     }
-    var subX = x & 0x3
-    var subY = y & 0x3
-    return section[4 * subY + subX]
+    var subX = x & SECTION_MASK
+    var subY = y & SECTION_MASK
+    return section[SECTION_SIZE * subY + subX]
   }
 
   [x, y]=(tile) {
-    var sectionX = x >> 2
-    var sectionY = y >> 2
+    var sectionX = x >> SECTION_SHIFT
+    var sectionY = y >> SECTION_SHIFT
     var pair = Elegant.pair(sectionX, sectionY)
     var section = _tiles[pair]
     if (!section) {
-      section = _tiles[pair] = (0...16).map {|i| Tile.new() }.toList
+      section = _tiles[pair] = (0...(SECTION_SIZE * SECTION_SIZE)).map {|i| Tile.new() }.toList
     }
-    var subX = x & 0x3
-    var subY = y & 0x3
-    section[4 * subY + subX] = tile
+    var subX = x & SECTION_MASK
+    var subY = y & SECTION_MASK
+    section[SECTION_SIZE * subY + subX] = tile
   }
 }
 

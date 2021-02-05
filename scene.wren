@@ -99,26 +99,43 @@ class CameraLerp is Ui {
 
 class WorldScene is Scene {
   construct new(args) {
-    _player = Player.new()
-    _camera = _player.pos * 1
+    _camera = Vec.new()
     _moving = false
     _tried = false
     _ui = []
-    _world = World.new()
-    _world.addEntity("player", _player)
 
-    _world.map = TileMap.init()
-    System.print(_world.map)
-    _world.map[0, 0] = Tile.new({ "floor": "grass" })
+    var world = World.new()
+    world.addEntity("player", Player.new())
 
-    var tent = _world.addEntity(Tent.new())
+    world.map = TileMap.init()
+    world.map[0, 0] = Tile.new({ "floor": "grass" })
+
+    var tent = world.addEntity(Tent.new())
     tent.pos.x = 2
-    var fire = _world.addEntity(Campfire.new())
+    var fire = world.addEntity(Campfire.new())
     fire.pos.x = 1
     fire.pos.y = 3
+
+    _worlds = []
+    _worldIndex = 0
+
+    pushWorld(world)
+  }
+
+  pushWorld(world) {
+    _worlds.add(world)
+    var player = world.getEntityByTag("player")
+    _camera.x = player.pos.x
+    _camera.y = player.pos.y
+    _world = world
+    _worldIndex = _worlds.count - 1
+    return _worldIndex
   }
 
   update() {
+    _world = _worlds[_worldIndex]
+    var player = _world.getEntityByTag("player")
+
     T = T + (1/60)
     F = (T * 2).floor % 2
 
@@ -160,7 +177,7 @@ class WorldScene is Scene {
       } else if (Actions.down.firing) {
         move.y = 1
       }
-      _player.vel = move
+      player.vel = move
     }
     pressed = Actions.directions.any {|key| key.down }
 
@@ -193,6 +210,7 @@ class WorldScene is Scene {
   }
 
   draw() {
+    var player = _world.getEntityByTag("player")
     var X_OFFSET = 4
     if (_invert) {
       Canvas.cls(Nokia.fg)
@@ -208,8 +226,8 @@ class WorldScene is Scene {
 
     for (dy in -5...5) {
       for (dx in -7...7) {
-        var x = _player.pos.x + dx
-        var y = _player.pos.y + dy
+        var x = player.pos.x + dx
+        var y = player.pos.y + dy
         if (_world.map[x, y]["floor"] == "grass") {
           SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
         }

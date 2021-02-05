@@ -1,6 +1,6 @@
 import "math" for Vec
 import "./core/entity" for Entity
-import "./events" for CollisionEvent, MoveEvent, EnterTentEvent
+import "./events" for CollisionEvent, MoveEvent, EnterTentEvent, ExitTentEvent
 
 class Tent is Entity {
   construct new() {
@@ -93,6 +93,9 @@ class Player is Entity {
       pos = old
     } else if (old != pos) {
       ctx.events.add(MoveEvent.new(this))
+      if (ctx.map[pos]["exit"]) {
+        ctx.events.add(ExitTentEvent.new())
+      }
     }
     vel = Vec.new()
   }

@@ -10,7 +10,7 @@ import "./core/world" for World, Zone
 import "./core/scene" for Scene, Ui
 import "./core/map" for TileMap, Tile
 import "./menu" for Menu
-import "./events" for CollisionEvent, MoveEvent, EnterTentEvent
+import "./events" for CollisionEvent, MoveEvent, EnterTentEvent, ExitTentEvent
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -35,14 +35,17 @@ class TransitionEffect is Ui {
       } else {
         ctx.world.popZone()
       }
-      var player = _zone.getEntityByTag("player")
+      var player = ctx.world.active.getEntityByTag("player")
       ctx.camera = player.pos * 1
     }
   }
 
-  finished { _step >= speed * 4.5 }
+  finished { _step >= speed * 3.5 }
 
   draw() {
+    if (_step == 0) {
+      return
+    }
     if (_step < speed) {
       for (y in 0...Canvas.height) {
         for (x in 0...Canvas.width) {
@@ -136,17 +139,19 @@ class WorldScene is Scene {
     _camera.y = player.pos.y
 
     _tentZone = Zone.new()
-    _tentZone.addEntity("player", Player.new())
+    var tentPlayer = _tentZone.addEntity("player", Player.new())
+    tentPlayer.pos.x = 2
+    tentPlayer.pos.y = 5
 
     _tentZone.map = TileMap.init()
-    for (x in -1..8) {
-      _tentZone.map[x, -1] = Tile.new({ "floor": "void", "solid": true })
-      _tentZone.map[x, 8] = Tile.new({ "floor": "void", "solid": true })
+    for (i in -1..5) {
+      _tentZone.map[i, -1] = Tile.new({ "floor": "void", "solid": true })
+      _tentZone.map[i, 5] = Tile.new({ "floor": "void", "solid": true })
+      _tentZone.map[-1, i] = Tile.new({ "floor": "void", "solid": true })
+      _tentZone.map[5, i] = Tile.new({ "floor": "void", "solid": true })
     }
-    for (y in -1..8) {
-      _tentZone.map[-1, y] = Tile.new({ "floor": "void", "solid": true })
-      _tentZone.map[8, y] = Tile.new({ "floor": "void", "solid": true })
-    }
+    _tentZone.map[2, 5] = Tile.new({ "floor": "door", "exit": true })
+    _tentZone.map[2, 6] = Tile.new({ "exit": true })
   }
 
   update() {
@@ -212,6 +217,9 @@ class WorldScene is Scene {
       } else if (event is EnterTentEvent) {
         System.print("Entering tent...")
         _ui.add(TransitionEffect.new(this, _tentZone))
+      } else if (event is ExitTentEvent) {
+        System.print("Entering tent...")
+        _ui.add(TransitionEffect.new(this, null))
         /*
         _ui.add(Menu.new(_world, [
           "Sleep", "relax",
@@ -227,6 +235,7 @@ class WorldScene is Scene {
   }
 
   draw() {
+    _zone = _world.active
     var player = _zone.getEntityByTag("player")
     var X_OFFSET = 4
     if (_invert) {
@@ -249,6 +258,8 @@ class WorldScene is Scene {
           SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
         } else if (_zone.map[x, y]["floor"] == "void") {
           Canvas.rectfill(x * 8 + X_OFFSET, y * 8, 8, 8, _invert ? Nokia.bg : Nokia.fg)
+        } else if (_zone.map[x, y]["floor"] == "door") {
+          CustomSheet.draw(32, 8, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
         }
       }
     }

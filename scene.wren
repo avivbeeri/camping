@@ -5,12 +5,12 @@ import "input" for Keyboard
 import "math" for Vec
 import "./tilesheet" for Tilesheet
 import "./keys" for InputGroup, Actions
-import "./entities" for Player, Camera, Tent, Campfire
+import "./entities" for Player, Tent, Campfire
 import "./core/world" for World
-import "./core/scene" for Scene
+import "./core/scene" for Scene, Ui
 import "./core/map" for TileMap, Tile
 import "./menu" for Menu
-import "./events" for CollisionEvent
+import "./events" for CollisionEvent, MoveEvent
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -19,18 +19,42 @@ var F = 0
 
 var STATIC = false
 
+class CameraLerp is Ui {
+  construct new(camera, goal) {
+    _camera = camera
+    _goal = goal
+    _step = (goal - camera).unit / speed
+  }
+
+  finished {
+    var dist = (_goal - _camera).length
+    return dist < (1/speed)
+  }
+
+  speed { 32 }
+
+  update() {
+    var cam = _camera
+    cam = cam + _step
+
+    if (finished) {
+      cam = _goal
+    }
+
+    // We need to modify the camera in place
+    _camera.x = cam.x
+    _camera.y = cam.y
+  }
+}
+
 class WorldScene is Scene {
   construct new(args) {
     _player = Player.new()
-    _camera = Camera.new(_player)
+    _camera = _player.pos * 1
     _moving = false
     _tried = false
     _ui = []
-
-
-
     _world = World.new()
-    _world.addEntity("camera", _camera)
     _world.addEntity("player", _player)
 
     _world.map = TileMap.init()
@@ -55,6 +79,7 @@ class WorldScene is Scene {
       }
       return
     }
+    _moving = false
 
     _invert = Nokia.getInput("1").down
     if (Nokia.getInput("1").justPressed) {
@@ -74,7 +99,7 @@ class WorldScene is Scene {
     }
 
 
-    if (!_camera.moving && !_tried) {
+    if (!_tried) {
       var move = Vec.new()
       if (Actions.left.firing) {
         move.x = -1
@@ -90,11 +115,16 @@ class WorldScene is Scene {
     pressed = Actions.directions.any {|key| key.down }
 
     _world.update()
-    _moving = _camera.moving || pressed
     for (event in _world.events) {
-      if (event is CollisionEvent) {
+      if (event is MoveEvent) {
+        if (event.target is Player) {
+          _moving = true
+          _ui.add(CameraLerp.new(_camera, event.target.pos))
+        }
+      } else if (event is CollisionEvent) {
         Nokia.synth.playTone(110, 50)
         _tried = true
+        _moving = false
       }
     }
     if (!pressed) {
@@ -112,7 +142,7 @@ class WorldScene is Scene {
     var cx = (Canvas.width - X_OFFSET - 20) / 2
     var cy = Canvas.height / 2 - 4
     if (!STATIC) {
-      Canvas.offset(cx-_camera.pos.x * 8 -X_OFFSET, cy-_camera.pos.y * 8)
+      Canvas.offset(cx-_camera.x * 8 -X_OFFSET, cy-_camera.y * 8)
     }
     var x = Canvas.width - 20
 

@@ -11,6 +11,7 @@ import "./core/scene" for Scene, Ui
 import "./core/map" for TileMap, Tile
 import "./menu" for Menu
 import "./events" for CollisionEvent, MoveEvent, EnterTentEvent, ExitTentEvent
+import "./fade" for FADE_FRAMES
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
 var SmallSheet = Tilesheet.new("res/small.png")
@@ -30,12 +31,19 @@ class TransitionEffect is Ui {
   update() {
     _step = _step + 1/60
     if (finished) {
+
       if (_zone) {
         ctx.world.pushZone(_zone)
       } else {
         ctx.world.popZone()
       }
-      var player = ctx.world.active.getEntityByTag("player")
+      var zone = ctx.world.active
+      var player = zone.getEntityByTag("player")
+      if (_zone) {
+        if (zone["start"]) {
+          player.pos = zone["start"] * 1
+        }
+      }
       ctx.camera = player.pos * 1
     }
   }
@@ -45,31 +53,8 @@ class TransitionEffect is Ui {
   draw() {
     if (_step == 0) {
       return
-    }
-    if (_step < speed) {
-      for (y in 0...Canvas.height) {
-        for (x in 0...Canvas.width) {
-          if (y % 2 == 1 && x % 2 == 1) {
-            Canvas.pset(x, y, Nokia.fg)
-          }
-        }
-      }
-    } else if (_step < speed * 2) {
-      for (y in 0...Canvas.height) {
-        for (x in 0...Canvas.width) {
-          if (y % 2 != x % 2) {
-            Canvas.pset(x, y, Nokia.fg)
-          }
-        }
-      }
     } else if (_step < speed * 3) {
-      for (y in 0...Canvas.height) {
-        for (x in 0...Canvas.width) {
-          if (y % 2 == 1 ||  x % 2 == 1) {
-            Canvas.pset(x, y, Nokia.fg)
-          }
-        }
-      }
+      FADE_FRAMES[(_step / speed).floor].draw(0,0)
     } else {
       Canvas.cls(Nokia.fg)
     }
@@ -84,6 +69,7 @@ class CameraLerp is Ui {
     _start = ctx.camera * 1
     _alpha = 0
     _goal = goal
+    _dir = (_goal - _camera)
   }
 
   finished {
@@ -91,14 +77,16 @@ class CameraLerp is Ui {
     return _alpha >= 1 || dist < speed
   }
 
-  speed { 1 / 24 }
+  speed { 1 / 30 }
 
   update() {
     _alpha = _alpha + speed
 
-    var cam = _camera
+    var cam = _start + _dir * _alpha
+    /*
     cam.x = M.lerp(_start.x, _alpha, _goal.x)
     cam.y = M.lerp(_start.y, _alpha, _goal.y)
+    */
 
     if (finished) {
       cam = _goal
@@ -139,6 +127,8 @@ class WorldScene is Scene {
     _camera.y = player.pos.y
 
     _tentZone = Zone.new()
+    _tentZone["start"] = Vec.new(2, 4)
+    _tentZone["floor"] = "void"
     var tentPlayer = _tentZone.addEntity("player", Player.new())
     tentPlayer.pos.x = 2
     tentPlayer.pos.y = 5
@@ -149,6 +139,11 @@ class WorldScene is Scene {
       _tentZone.map[i, 5] = Tile.new({ "floor": "void", "solid": true })
       _tentZone.map[-1, i] = Tile.new({ "floor": "void", "solid": true })
       _tentZone.map[5, i] = Tile.new({ "floor": "void", "solid": true })
+    }
+    for (y in 0...5) {
+      for (x in 0...5) {
+        _tentZone.map[x, y] = Tile.new({ "floor": "blank" })
+      }
     }
     _tentZone.map[2, 5] = Tile.new({ "floor": "door", "exit": true })
     _tentZone.map[2, 6] = Tile.new({ "exit": true })
@@ -215,18 +210,12 @@ class WorldScene is Scene {
         _tried = true
         _moving = false
       } else if (event is EnterTentEvent) {
-        System.print("Entering tent...")
+        var goal =  player.pos * 1
+        goal.y = goal.y - 1
+        _ui.add(CameraLerp.new(this, goal))
         _ui.add(TransitionEffect.new(this, _tentZone))
       } else if (event is ExitTentEvent) {
-        System.print("Entering tent...")
         _ui.add(TransitionEffect.new(this, null))
-        /*
-        _ui.add(Menu.new(_world, [
-          "Sleep", "relax",
-          "Cook", "cook",
-          "Cancel", "cancel"
-        ]))
-        */
       }
     }
     if (!pressed) {
@@ -246,7 +235,7 @@ class WorldScene is Scene {
     var cx = (Canvas.width - X_OFFSET - 20) / 2
     var cy = Canvas.height / 2 - 4
     if (!STATIC) {
-      Canvas.offset(cx-_camera.x * 8 -X_OFFSET, cy-_camera.y * 8)
+      Canvas.offset((cx-_camera.x * 8 -X_OFFSET).floor, (cy-_camera.y * 8).floor)
     }
     var x = Canvas.width - 20
 
@@ -254,12 +243,17 @@ class WorldScene is Scene {
       for (dx in -7...7) {
         var x = player.pos.x + dx
         var y = player.pos.y + dy
-        if (_zone.map[x, y]["floor"] == "grass") {
+        var tile = _zone.map[x, y]
+        if (tile["floor"] == "blank") {
+          // Intentionally do nothing
+        } else if (tile["floor"] == "grass") {
           SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
-        } else if (_zone.map[x, y]["floor"] == "void") {
+        } else if (tile["floor"] == "void") {
           Canvas.rectfill(x * 8 + X_OFFSET, y * 8, 8, 8, _invert ? Nokia.bg : Nokia.fg)
-        } else if (_zone.map[x, y]["floor"] == "door") {
+        } else if (tile["floor"] == "door") {
           CustomSheet.draw(32, 8, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+        } else if (_zone["floor"] == "void") {
+          CustomSheet.draw(40, 8, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
         }
       }
     }
@@ -283,7 +277,10 @@ class WorldScene is Scene {
     // Put a background on the player for readability
     if (!STATIC) {
       Canvas.offset()
-      Canvas.rectfill(cx, cy, 8, 8, _invert ? Nokia.fg : Nokia.bg)
+      var tile = _zone.map[player.pos]
+      if (tile["floor"] || _zone["floor"]) {
+        Canvas.rectfill(cx, cy, 8, 8, _invert ? Nokia.fg : Nokia.bg)
+      }
       // Draw player in screen center
       if (_moving) {
         // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)

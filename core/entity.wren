@@ -25,7 +25,9 @@ class Entity is DataObject {
   priority { _priority }
 
   move() {
-    _pos = _pos + _vel
+    // pos = pos + vel
+    pos.x = pos.x + vel.x
+    pos.y = pos.y + vel.y
   }
 
   occupies(x, y) {

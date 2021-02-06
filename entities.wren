@@ -42,6 +42,7 @@ class Player is Entity {
     var solidEntity = false
     for (entity in occupying) {
       var event = entity.notify(ctx, CollisionEvent.new(this, entity, pos))
+      System.print(event)
       if (!event.cancelled) {
         ctx.events.add(event)
         solidEntity = true

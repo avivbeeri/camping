@@ -14,7 +14,15 @@ import "./events" for CollisionEvent, MoveEvent, EnterTentEvent, ExitTentEvent
 import "./fade" for FADE_FRAMES
 
 var CustomSheet = Tilesheet.new("res/camp-tiles.png")
+
+var TentTile = CustomSheet.getTile(0, 0, 16, 16, false)
+var VoidTile = CustomSheet.getTile(40, 8, false)
+var DoorTile = CustomSheet.getTile(32, 8, false)
+var FireTiles = [ CustomSheet.getTile(16, 0, false), CustomSheet.getTile(24, 0, false) ]
+var PlayerStandTiles = [ CustomSheet.getTile(16, 8, false), CustomSheet.getTile(24, 8, false) ]
+var PlayerWalkTiles = [ CustomSheet.getTile(32, 0, false), CustomSheet.getTile(40, 0, false) ]
 var SmallSheet = Tilesheet.new("res/small.png")
+var GrassTile = SmallSheet.getTile(40, 32, false)
 var T = 0
 var F = 0
 
@@ -44,7 +52,7 @@ class TransitionEffect is Ui {
           player.pos = zone["start"] * 1
         }
       }
-      ctx.camera = player.pos * 1
+      ctx.camera = player.pos * 8
     }
   }
 
@@ -74,7 +82,7 @@ class CameraLerp is Ui {
 
   finished {
     var dist = (_goal - _camera).length
-    return _alpha >= 1 || dist < speed
+    return _alpha >= 1 || dist <= speed
   }
 
   speed { 1 / 30 }
@@ -123,8 +131,8 @@ class WorldScene is Scene {
 
     _world.pushZone(zone)
     var player = zone.getEntityByTag("player")
-    _camera.x = player.pos.x
-    _camera.y = player.pos.y
+    _camera.x = player.pos.x * 8
+    _camera.y = player.pos.y * 8
 
     _tentZone = Zone.new()
     _tentZone["start"] = Vec.new(2, 4)
@@ -203,7 +211,7 @@ class WorldScene is Scene {
       if (event is MoveEvent) {
         if (event.target is Player) {
           _moving = true
-          _ui.add(CameraLerp.new(this, event.target.pos))
+          _ui.add(CameraLerp.new(this, event.target.pos * 8))
         }
       } else if (event is CollisionEvent) {
         Nokia.synth.playTone(110, 50)
@@ -212,7 +220,8 @@ class WorldScene is Scene {
       } else if (event is EnterTentEvent) {
         var goal =  player.pos * 1
         goal.y = goal.y - 1
-        _ui.add(CameraLerp.new(this, goal))
+        _moving = true
+        _ui.add(CameraLerp.new(this, goal * 8))
         _ui.add(TransitionEffect.new(this, _tentZone))
       } else if (event is ExitTentEvent) {
         _ui.add(TransitionEffect.new(this, null))
@@ -235,7 +244,7 @@ class WorldScene is Scene {
     var cx = (Canvas.width - X_OFFSET - 20) / 2
     var cy = Canvas.height / 2 - 4
     if (!STATIC) {
-      Canvas.offset((cx-_camera.x * 8 -X_OFFSET).floor, (cy-_camera.y * 8).floor)
+      Canvas.offset((cx-_camera.x -X_OFFSET).floor, (cy-_camera.y).floor)
     }
     var x = Canvas.width - 20
 
@@ -243,35 +252,38 @@ class WorldScene is Scene {
       for (dx in -7...7) {
         var x = player.pos.x + dx
         var y = player.pos.y + dy
+        var sx = x * 8 + X_OFFSET
+        var sy = y * 8
         var tile = _zone.map[x, y]
         if (tile["floor"] == "blank") {
           // Intentionally do nothing
         } else if (tile["floor"] == "grass") {
-          SmallSheet.draw(40, 32, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+          GrassTile.draw(sx, sy)
         } else if (tile["floor"] == "void") {
-          Canvas.rectfill(x * 8 + X_OFFSET, y * 8, 8, 8, _invert ? Nokia.bg : Nokia.fg)
+          Canvas.rectfill(sx, sy, 8, 8, Nokia.fg)
         } else if (tile["floor"] == "door") {
-          CustomSheet.draw(32, 8, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+          DoorTile.draw(sx, sy)
         } else if (_zone["floor"] == "void") {
-          CustomSheet.draw(40, 8, 8, 8, x * 8 + X_OFFSET, y * 8, _invert)
+          VoidTile.draw(sx, sy)
         }
       }
     }
 
     for (entity in _zone.entities) {
+      var sx = entity.pos.x * 8 + X_OFFSET
+      var sy = entity.pos.y * 8
       if (STATIC && entity is Player) {
         // We draw this
         if (_moving) {
-          // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)
-          CustomSheet.draw(32 + (F * 8), 0, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+          PlayerWalkTiles[F].draw(sx, sy)
         } else {
-          CustomSheet.draw(16 + (F * 8), 8, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+          PlayerStandTiles[F].draw(sx, sy)
         }
 
       } else if (entity is Tent) {
-        CustomSheet.draw(0, 0, 16, 16, entity.pos.x * 8 + X_OFFSET * 2, entity.pos.y * 8, _invert)
+        TentTile.draw(sx + X_OFFSET, sy)
       } else if (entity is Campfire) {
-        CustomSheet.draw(16 + (F * 8), 0, 8, 8, entity.pos.x * 8 + X_OFFSET, entity.pos.y * 8, _invert)
+        FireTiles[F].draw(sx, sy)
       }
     }
     // Put a background on the player for readability
@@ -283,10 +295,9 @@ class WorldScene is Scene {
       }
       // Draw player in screen center
       if (_moving) {
-        // SmallSheet.draw(4*8, 0, 8, 8, cx, cy, _invert)
-        CustomSheet.draw(32 + (F * 8), 0, 8, 8, cx, cy, _invert)
+        PlayerWalkTiles[F].draw(cx, cy)
       } else {
-        CustomSheet.draw(16 + (F * 8), 8, 8, 8, cx, cy, _invert)
+        PlayerStandTiles[F].draw(cx, cy)
       }
     }
 

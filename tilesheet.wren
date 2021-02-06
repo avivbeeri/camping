@@ -19,5 +19,20 @@ class Tilesheet {
       "background": Color.none // invert ? Nokia.fg : Nokia.bg
     }).draw(dx, dy)
   }
+
+  getTile(sx, sy, invert) {
+    return getTile(sx, sy, 8, 8, invert)
+  }
+
+  getTile(sx, sy, sw, sh, invert) {
+    return _image.transform({
+      "srcX": sx, "srcY": sy,
+      "srcW": sw, "srcH": sh,
+      "mode": "MONO",
+      "foreground": invert ? Nokia.bg : Nokia.fg,
+      "background": Color.none // invert ? Nokia.fg : Nokia.bg
+    })
+  }
 }
+
 

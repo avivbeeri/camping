@@ -37,7 +37,7 @@ class Entity is DataObject {
            y <= pos.y + size.y - 1
   }
 
-  notify(ctx, event) {}
+  notify(ctx, event) { event }
 
   update(ctx) {}
   draw(ctx) {}
